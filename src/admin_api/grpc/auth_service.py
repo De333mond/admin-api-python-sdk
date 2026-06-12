@@ -1,5 +1,6 @@
 import grpc
 
+from admin_api.exceptions import AuthException, InvalidTokenException
 from admin_api.grpc._generated.auth import auth_pb2
 from admin_api.grpc._generated.auth.auth_pb2_grpc import AuthServiceStub
 from admin_api.grpc.dto.auth import TokenPayload, UserData
@@ -22,8 +23,7 @@ class AuthGRPCService:
 
     def get_payload(self, jwt: str) -> TokenPayload:
         if not self.channel or not self.stub:
-            raise Exception("You can call methods only in context manager!")
-
+            raise RuntimeError("This method can only be called inside a context manager.")
         try:
             request = auth_pb2.GetPayloadRequest(token=jwt)
             response = self.stub.GetPayload(request)
@@ -36,13 +36,13 @@ class AuthGRPCService:
             )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAUTHENTICATED:
-                raise Exception("Invalid token") from e
+                raise InvalidTokenException() from e
             else:
-                raise Exception(f"Auth service error: {e.code()}") from e
+                raise AuthException(f"Auth service error: {e.code()}") from e
 
     def get_user_data(self, jwt: str) -> UserData:
         if not self.channel or not self.stub:
-            raise Exception("You can call methods only in context manager!")
+            raise RuntimeError("You can call methods only in context manager!")
 
         try:
             request = auth_pb2.GetUserRequest(token=jwt)
@@ -50,13 +50,13 @@ class AuthGRPCService:
             return UserData.from_response(response)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAUTHENTICATED:
-                raise Exception("Invalid token") from e
+                raise InvalidTokenException() from e
             else:
-                raise Exception(f"Auth service error: {e.code()}") from e
+                raise AuthException(f"Auth service error: {e.code()}") from e
 
     def check_conn(self) -> bool:
         if not self.channel:
-            raise Exception("You can call methods only in context manager!")
+            raise RuntimeError("You can call methods only in context manager!")
 
         try:
             grpc.channel_ready_future(self.channel).result(timeout=15)

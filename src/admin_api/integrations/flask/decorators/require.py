@@ -3,6 +3,7 @@ from functools import wraps
 
 from flask import current_app, request
 
+from admin_api.exceptions import TokenNotProvided
 from admin_api.integrations.flask import FLASK_EXTENSION_NAME, AdminApiFlask
 from admin_api.sdk.auth_context import AuthContext
 
@@ -24,7 +25,7 @@ def require(*required: str):
         def decorated(*args, **kwargs):
             token = request.headers.get("Authorization")
             if not token:
-                raise Exception("Token not provided")
+                raise TokenNotProvided()
 
             auth_manager: AdminApiFlask = current_app.extensions[FLASK_EXTENSION_NAME]
             auth_context = auth_manager.check(required, token)
