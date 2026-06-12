@@ -14,3 +14,12 @@ repos:
       - id: end-of-file-fixer
       - id: check-toml
       - id: check-yaml
+
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: make typecheck
+        language: system
+        pass_filenames: false

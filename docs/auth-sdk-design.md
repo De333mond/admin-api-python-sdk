@@ -175,12 +175,65 @@ SDK может дать два уровня интеграции:
 Примерно это может выглядеть так:
 
 ```python
+auth_sdk = AdminApiAuth(...)
+required = auth_sdk.flask.required
+
 @required("user:update", scope_resolver=DepartmentScopeResolver())
 def update_user_model(auth_context: AuthContext, ...):
     auth_context.check_scope(scope_type="department", scope_id=scope_id)
 ```
 
 Где `DepartmentScopeResolver` знает, как достать `scope_id` из request, path params или другой части окружения.
+
+### Как декоратор получает доступ к SDK
+Декоратор не должен сам искать глобальный объект конфигурации. Лучше, чтобы интеграция Flask создавала декоратор из уже настроенного SDK-объекта:
+
+```python
+auth_sdk = AdminApiAuth(...)
+required = auth_sdk.flask.required
+```
+
+Тогда декоратор имеет доступ ко всем нужным настройкам: transport, timeout, retry policy, cache, fail policy и способу получения `user_id`.
+
+Практически это реализуется через decorator factory: SDK создает декоратор, а созданный декоратор хранит SDK в замыкании.
+
+Примерно:
+
+```python
+class FlaskAuthIntegration:
+    def __init__(self, sdk: AdminApiAuth):
+        self.sdk = sdk
+
+    def required(self, permission: str, scope_resolver: ScopeResolver | None = None):
+        def decorator(fn):
+            @wraps(fn)
+            def wrapper(*args, **kwargs):
+                auth_context = self.sdk.context_from_request(request)
+                scope = scope_resolver.resolve(request) if scope_resolver else None
+
+                if not auth_context.check(permission, scope=scope):
+                    abort(403)
+
+                kwargs["auth_context"] = auth_context
+                return fn(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+```
+
+Использование:
+
+```python
+auth_sdk = AdminApiAuth(...)
+required = auth_sdk.flask.required
+
+@required("user:update", scope_resolver=DepartmentScopeResolver())
+def update_user_model(auth_context: AuthContext, ...):
+    auth_context.check_scope(scope_type="department", scope_id=scope_id)
+```
+
+Если декоратор нужно создавать до инициализации приложения, допустим fallback через `current_app.extensions["auth"]`, но основной путь лучше держать через замыкание, чтобы не возвращаться к глобальному singleton.
 
 ### Примерный сценарий
 - получить `user_id` из токена;
@@ -236,17 +289,42 @@ def update_user_model(auth_context: AuthContext, ...):
 - как происходит сброс после изменения ролей;
 - что делать при недоступности auth-service.
 
-## Поведение при сбоях
+## Конфигурация SDK
 
-SDK должен поддерживать настраиваемую политику:
+### Что должно настраиваться
+SDK должен иметь один явный объект конфигурации, который создается при старте приложения и передается в интеграции Flask/FastAPI.
 
-- deny-by-default для чувствительных операций;
-- cached-last-known для снижения простоя;
-- configurable per route / per service, если для разных операций нужна разная строгость.
+Минимальный набор настроек:
 
-Для авторизации обычно безопаснее deny-by-default, а отклонения от этого должны быть явными.
+- адрес auth-service;
+- режим транспорта: gRPC или HTTP fallback, если он будет поддерживаться;
+- таймауты запросов;
+- retry policy;
+- политика поведения при недоступности auth-service;
+- параметры кэша, если кэш включен;
+- способ получения `user_id` или сервисной идентичности;
+- список доступных `ScopeResolver` или их фабричный метод.
 
-## Наблюдаемость
+### Рекомендуемый стиль
+Лучше не размазывать настройки по разным функциям и декораторам. Хороший вариант:
+
+```python
+auth_sdk = AdminApiAuth(
+    grpc_target="auth-service:50051",
+    timeout_ms=300,
+    retry_policy=RetryPolicy(max_attempts=2),
+    fail_policy=FailPolicy.DENY,
+    cache=CacheConfig(enabled=True, ttl_seconds=5),
+)
+```
+
+Дальше этот объект можно передавать в Flask middleware или FastAPI dependency factory.
+
+### Что не стоит делать
+Не стоит делать SDK глобальным singleton’ом по умолчанию. Это усложнит тестирование, работу нескольких приложений в одном процессе и разные настройки для разных сервисов.
+
+### Открытый вопрос
+Нужно ли поддерживать загрузку конфигурации из environment variables, YAML/JSON или достаточно явно передавать объект конфигурации в коде.
 
 Для такого SDK полезны:
 

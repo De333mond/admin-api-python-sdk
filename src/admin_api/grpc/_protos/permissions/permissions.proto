@@ -1,0 +1,51 @@
+syntax = 'proto3';
+
+package permissions;
+
+service PermissionService {
+  rpc GetPermissionsByService(GetPermissionsByServiceRequest) returns (GetPermissionsByServiceResponse);
+  rpc CreateServicePermission(CreateServicePermissionRequest) returns (CreateServicePermissionResponse);
+  rpc UpdateServicePermission(UpdateServicePermissionRequest) returns (UpdateServicePermissionResponse);
+  rpc DeleteServicePermission(DeleteServicePermissionRequest) returns (DeleteServicePermissionResponse);
+}
+
+message CreatePermission {
+  string title = 2;
+  string verbose_name = 3;
+}
+
+message Permission {
+  string id = 1;
+  string title = 3;
+  string verbose_name = 4;
+}
+
+message GetPermissionsByServiceRequest {
+  string service_name = 1;
+}
+
+message GetPermissionsByServiceResponse {
+  repeated Permission permissions = 1;
+}
+
+message CreateServicePermissionRequest {
+  string service_name = 1;
+  CreatePermission permission = 2;
+}
+
+message CreateServicePermissionResponse {
+  Permission permission = 1;
+}
+
+message UpdateServicePermissionRequest {
+  string service_name = 1;
+  Permission permission = 2;
+}
+
+message UpdateServicePermissionResponse {}
+
+message DeleteServicePermissionRequest {
+  string id = 1;
+}
+
+message DeleteServicePermissionResponse {}
