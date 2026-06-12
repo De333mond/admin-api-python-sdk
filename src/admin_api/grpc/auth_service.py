@@ -47,20 +47,7 @@ class AuthGRPCService:
         try:
             request = auth_pb2.GetUserRequest(token=jwt)
             response = self.stub.GetUser(request)
-            return UserData(
-                id=response.id,
-                external_id=response.external_id,
-                role=response.role,
-                external_role=response.external_role,
-                name=response.name,
-                surname=response.surname,
-                patronymic=response.patronymic,
-                email=response.email,
-                faculty=response.faculty,
-                login=response.login,
-                last_login=response.last_login,
-                created_at=response.created_at,
-            )
+            return UserData.from_response(response)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAUTHENTICATED:
                 raise Exception("Invalid token") from e

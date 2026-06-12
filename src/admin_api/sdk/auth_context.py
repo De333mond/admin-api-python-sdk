@@ -1,11 +1,9 @@
 from dataclasses import dataclass
 
-
-@dataclass
-class User:
-    user_id: str
+from admin_api.grpc.dto.auth import UserData
 
 
 @dataclass
 class AuthContext:
-    user: User
+    user: UserData
+    permissions: list[str]

@@ -1,5 +1,5 @@
 from admin_api.grpc.auth_service import AuthGRPCService
-from admin_api.sdk.auth_context import AuthContext, User
+from admin_api.sdk.auth_context import AuthContext
 
 
 class AdminApiAuth:
@@ -16,4 +16,4 @@ class AdminApiAuth:
             if required and not any(permission in payload.permissions for permission in required):
                 raise Exception("Permission denied error")
 
-            return AuthContext(user=User(user.id))
+            return AuthContext(user=user, permissions=list(payload.permissions))
