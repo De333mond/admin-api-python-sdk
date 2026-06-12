@@ -15,3 +15,15 @@ import pytest
 def test_import(path):
     module = __import__(path)
     assert module is not None
+
+
+def test_flask_application():
+    from flask import Flask
+
+    from admin_api.integrations.flask.flask import AdminApiFlask
+
+    app = Flask(__name__)
+    admin_api = AdminApiFlask(grpc_target="admin.kd.mospolytech.ru:50051")
+    admin_api.init_app(app)
+
+    app.run()

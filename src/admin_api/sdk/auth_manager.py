@@ -13,7 +13,7 @@ class AdminApiAuth:
             payload = service.get_payload(jwt=token)
             user = service.get_user_data(jwt=token)
 
-            if not any(permission not in payload.permissions for permission in required):
+            if required and not any(permission in payload.permissions for permission in required):
                 raise Exception("Permission denied error")
 
             return AuthContext(user=User(user.id))
