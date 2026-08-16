@@ -20,7 +20,7 @@ class AdminApiAuth:
     ) -> None:
         if api is None and base_url is not None:
             api = SyncApi(base_url, timeout=timeout_ms / 1000)
-        self._root = api
+        self._root_api = api
         self._timeout_ms = timeout_ms
         self._service_name = service_name
         self._permission_verifiers: list[PermissionVerifier] = []
@@ -33,11 +33,11 @@ class AdminApiAuth:
         self._middlewares = middlewares
 
     def context_from_token(self, token: str) -> AuthContext[SyncApi]:
-        if self._root is None:
+        if self._root_api is None:
             raise ValueError("Provide api or base_url")
         if not self._service_name:
             raise ValueError("service_name is required")
-        user_api = self._root.bind(token)
+        user_api = self._root_api.bind(token)
         user = user_api.send(user_api.users.get_me())
         permissions = user_api.send(user_api.users.get_permissions(self._service_name))
         return AuthContext(api=user_api, user=user, permissions=permissions)

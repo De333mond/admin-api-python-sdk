@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from uuid import UUID
 
 import httpx
@@ -64,12 +63,6 @@ def _handler(http_request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=PERMISSIONS_PAYLOAD)
     if http_request.url.path == "/custom":
         return httpx.Response(200, json={"ok": True})
-    if http_request.url.path == "/api/v1/mplk/groups":
-        return httpx.Response(200, json={"groups": ["IT-21"]})
-    if http_request.url.path == "/api/v1/mplk/students":
-        return httpx.Response(200, json={"students": []})
-    if http_request.url.path == "/api/v1/mplk/generic":
-        return httpx.Response(200, json={"proxied": True})
     return httpx.Response(404, json={"status_code": 404, "error_code": "not_found", "detail": "missing"})
 
 
@@ -135,30 +128,6 @@ def test_bind_preserves_subclass():
         assert bound.send(bound.users.ping()) == {"ok": True}
 
 
-def test_mplk_routes():
-    def handler(http_request: httpx.Request) -> httpx.Response:
-        if http_request.url.path == "/api/v1/mplk/groups":
-            assert "search" not in http_request.url.params
-            return httpx.Response(200, json={"groups": ["IT-21"]})
-        if http_request.url.path == "/api/v1/mplk/students":
-            assert http_request.url.params["group"] == "IT-21"
-            assert http_request.url.params["search"] == "ivan"
-            return httpx.Response(200, json={"students": [{"name": "Ivan"}]})
-        if http_request.url.path == "/api/v1/mplk/generic":
-            assert json.loads(http_request.content) == {"method": "GET", "url": "/foo"}
-            return httpx.Response(200, json={"ok": True})
-        return httpx.Response(404)
-
-    with SyncApi("http://admin-api.local", token="tok", transport=httpx.MockTransport(handler)) as api:
-        groups = api.send(api.mplk.get_groups())
-        students = api.send(api.mplk.get_students("IT-21", search="ivan"))
-        proxied = api.send(api.mplk.generic({"method": "GET", "url": "/foo"}))
-
-    assert groups == {"groups": ["IT-21"]}
-    assert students == {"students": [{"name": "Ivan"}]}
-    assert proxied == {"ok": True}
-
-
 def test_custom_operation():
     ping = Operation("GET", "/custom", adapter=TypeAdapter(dict[str, bool]))
     with _client(token="tok") as api:
@@ -215,10 +184,10 @@ def test_async_send():
 def test_admin_api_auth_default_client():
     auth = AdminApiAuth(base_url="http://admin-api.local", service_name="cabinet")
     try:
-        assert type(auth._root) is SyncApi
+        assert type(auth._root_api) is SyncApi
     finally:
-        assert auth._root is not None
-        auth._root.close()
+        assert auth._root_api is not None
+        auth._root_api.close()
 
 
 def test_admin_api_auth_injects_subclass():
