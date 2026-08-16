@@ -8,8 +8,9 @@ import pytest
         "admin_api.integrations.flask",
         "admin_api.sdk.auth_manager",
         "admin_api.sdk.auth_context",
-        "admin_api.grpc",
-        "admin_api.grpc.dto",
+        "admin_api.api",
+        "admin_api.api.users",
+        "admin_api.api.mplk",
     ],
 )
 def test_import(path):
