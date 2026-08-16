@@ -8,9 +8,7 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "grpc-stubs>=1.53.0.6",
-    "grpcio>=1.81.1",
-    "protobuf>=6.33.6",
+ "httpx>=0.28.1",
 ]
 
 [project.optional-dependencies]
@@ -27,7 +25,6 @@ module-name = "admin_api"
 
 [dependency-groups]
 dev = [
-    "grpcio-tools>=1.81.1",
     "mypy>=2.1.0",
     "mypy-protobuf>=5.1.0",
     "pre-commit>=4.6.0",
@@ -38,9 +35,6 @@ dev = [
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-exclude = [
-    '_generated'
-]
 
 [tool.ruff.lint]
 select = [ "E", "F", "I", "UP", "B", "COM"]

@@ -9,8 +9,8 @@ FLASK_EXTENSION_NAME = "admin_api"
 
 
 class AdminApiFlask(AdminApiAuth):
-    def __init__(self, grpc_target: str, token_parser: TokenParserBase, timeout_ms=300):
-        super().__init__(grpc_target, timeout_ms)
+    def __init__(self, token_parser: TokenParserBase, timeout_ms=300):
+        super().__init__(timeout_ms)
         self.token_parser: TokenParserBase = token_parser
 
     def init_app(self, app: Flask) -> None:
