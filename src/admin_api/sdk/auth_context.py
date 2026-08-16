@@ -1,9 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Generic, TypeVar
+
+ApiT = TypeVar("ApiT")
 
 
 @dataclass
-class AuthContext:
+class AuthContext(Generic[ApiT]):
+    api: ApiT
     user: Any
-    permissions: list[str]
+    permissions: Any
     middleware_result: dict[str, Any] = field(default_factory=dict)
